@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 
 export function middleware(req) {
   const { pathname } = req.nextUrl;
-  // Allow next internals, login endpoint and static files
+  // Allow next internals, login endpoint and static files, and our debug endpoint
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/login') ||
+    pathname.startsWith('/api/check-debug') ||
     pathname === '/login' ||
     pathname === '/favicon.ico'
   ) {
@@ -24,5 +25,5 @@ export function middleware(req) {
 }
 
 export const config = {
-  matcher: ['/', '/((?!_next/static|_next/image|api/login|login|favicon.ico).*)'],
+  matcher: ['/', '/((?!_next/static|_next/image|api/login|api/check-debug|login|favicon.ico).*)'],
 };
