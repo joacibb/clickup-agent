@@ -5,16 +5,18 @@ export default function Home() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
   const seen = useRef(new Set());
 
   useEffect(() => {
-    // Request notification permission once
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission().catch(console.error);
     }
 
     let mounted = true;
-    const fetchOnce = async () => {
+
+    const fetchUpdates = async () => {
       setLoading(true);
       setError(null);
       try {
@@ -28,7 +30,6 @@ export default function Home() {
         if (!mounted) return;
         setItems(newItems);
 
-        // Show notifications for new items
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           for (const it of newItems) {
             const id = `${it.taskId}::${it.date}`;
@@ -48,8 +49,24 @@ export default function Home() {
       }
     };
 
-    fetchOnce();
-    const timer = setInterval(fetchOnce, 60 * 1000); // every minute
+    const fetchTasks = async () => {
+      setTasksLoading(true);
+      try {
+        const res = await fetch('/api/tasks');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!mounted) return;
+        setTasks(json.results || []);
+      } catch (e) {
+        console.error('Error fetching tasks:', e);
+      } finally {
+        setTasksLoading(false);
+      }
+    };
+
+    fetchUpdates();
+    fetchTasks();
+    const timer = setInterval(fetchUpdates, 60 * 1000);
     return () => {
       mounted = false;
       clearInterval(timer);
@@ -78,8 +95,23 @@ export default function Home() {
           Permitir notificaciones
         </button>
         <button
+          onClick={() => {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+              setTimeout(() => {
+                new Notification('ClickUp Agent (TEST)', {
+                  body: 'Esta es una notificación de prueba 5 segundos después.',
+                });
+              }, 5000);
+            } else {
+              alert('Primero permití las notificaciones con el botón de arriba.');
+            }
+          }}
+          style={{ padding: '10px 14px', marginRight: 8 }}
+        >
+          TEST notificación (5s)
+        </button>
+        <button
           onClick={async () => {
-            // simple logout: clear cookie by setting expired cookie
             document.cookie = 'auth=; Path=/; Max-Age=0';
             window.location.href = '/login';
           }}
@@ -101,6 +133,41 @@ export default function Home() {
               <a href={it.taskUrl} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>{it.taskName}</a>
               <div style={{ marginTop: 6 }}>{it.text}</div>
               <div style={{ marginTop: 8, color: '#666', fontSize: 13 }}>{new Date(it.date).toLocaleString()}</div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <hr style={{ margin: '24px 0' }} />
+
+      <h2>Tareas recientes</h2>
+      <p style={{ color: '#666' }}>Últimas tareas que te fueron asignadas (incluye cerradas).</p>
+
+      {tasksLoading && <p>Cargando tareas...</p>}
+      {tasks.length === 0 ? (
+        !tasksLoading && <p>No se encontraron tareas en los últimos días.</p>
+      ) : (
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {tasks.map(t => (
+            <li key={t.id} style={{ padding: 12, borderRadius: 8, background: '#fff', boxShadow: '0 1px 0 rgba(0,0,0,0.05)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{
+                display: 'inline-block',
+                width: 10, height: 10,
+                borderRadius: '50%',
+                background: t.closed ? '#999' : `#${t.statusColor}`,
+                flexShrink: 0,
+              }} />
+              <div style={{ flex: 1 }}>
+                <a href={t.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600, textDecoration: t.closed ? 'line-through' : 'none', color: t.closed ? '#999' : '#000' }}>
+                  {t.name}
+                </a>
+                <span style={{ marginLeft: 8, fontSize: 12, color: '#888' }}>
+                  {t.closed ? 'Cerrada' : t.status}
+                </span>
+                <div style={{ marginTop: 4, fontSize: 12, color: '#aaa' }}>
+                  {t.dateUpdated ? new Date(t.dateUpdated).toLocaleString() : ''}
+                </div>
+              </div>
             </li>
           ))}
         </ul>
