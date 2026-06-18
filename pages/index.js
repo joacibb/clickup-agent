@@ -7,6 +7,7 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(false);
+  const [tasksError, setTasksError] = useState(null);
   const seen = useRef(new Set());
 
   useEffect(() => {
@@ -51,14 +52,18 @@ export default function Home() {
 
     const fetchTasks = async () => {
       setTasksLoading(true);
+      setTasksError(null);
       try {
         const res = await fetch('/api/tasks');
-        if (!res.ok) return;
+        if (!res.ok) {
+          const txt = await res.text().catch(() => '');
+          throw new Error(`API error ${res.status}: ${txt}`);
+        }
         const json = await res.json();
         if (!mounted) return;
         setTasks(json.results || []);
       } catch (e) {
-        console.error('Error fetching tasks:', e);
+        setTasksError(e.message);
       } finally {
         setTasksLoading(false);
       }
@@ -144,9 +149,9 @@ export default function Home() {
       <p style={{ color: '#666' }}>Últimas tareas que te fueron asignadas (incluye cerradas).</p>
 
       {tasksLoading && <p>Cargando tareas...</p>}
-      {tasks.length === 0 ? (
-        !tasksLoading && <p>No se encontraron tareas en los últimos días.</p>
-      ) : (
+      {tasksError && <p style={{ color: 'red' }}>Error tareas: {tasksError}</p>}
+      {!tasksLoading && !tasksError && tasks.length === 0 && <p>No se encontraron tareas en los últimos días.</p>}
+      {tasks.length > 0 && (
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {tasks.map(t => (
             <li key={t.id} style={{ padding: 12, borderRadius: 8, background: '#fff', boxShadow: '0 1px 0 rgba(0,0,0,0.05)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -26,7 +26,7 @@ Aplicación web construida con Next.js que monitorea actividades recientes en ta
 | `USER_ID` | ID del usuario a monitorear |
 | `TEAM_ID` | ID del equipo/espacio de trabajo |
 | `HOURS_BACK` | (opcional) Ventana de tiempo en horas hacia atrás para comentarios (default: 2) |
-| `DAYS_BACK` | (opcional) Ventana de tiempo en días hacia atrás para tareas recientes (default: 7) |
+| `DAYS_BACK` | (opcional) Ventana de tiempo en días hacia atrás para tareas recientes (default: 30) |
 | `DEBUG_SECRET` | (opcional) Clave secreta para acceder a `/api/check-debug` |
 
 ## Cómo obtener los IDs
