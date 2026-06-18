@@ -22,3 +22,6 @@ Thumbs.db
 
 # Coverage / test artifacts
 coverage/
+
+#IDE
+.idea/
